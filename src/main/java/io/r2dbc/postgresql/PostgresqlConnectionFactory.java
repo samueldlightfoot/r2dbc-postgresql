@@ -19,6 +19,7 @@ package io.r2dbc.postgresql;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.r2dbc.postgresql.authentication.AuthenticationHandler;
+import io.r2dbc.postgresql.authentication.GSSAuthenticationHandler;
 import io.r2dbc.postgresql.authentication.PasswordAuthenticationHandler;
 import io.r2dbc.postgresql.authentication.SASLAuthenticationHandler;
 import io.r2dbc.postgresql.client.Client;
@@ -242,6 +243,10 @@ public final class PostgresqlConnectionFactory implements ConnectionFactory {
         } else if (SASLAuthenticationHandler.supports(message)) {
             CharSequence password = Assert.requireNonNull(this.configuration.getPassword(), "Password must not be null");
             return new SASLAuthenticationHandler(password, this.configuration.getUsername());
+        } else if (GSSAuthenticationHandler.supports(message)) {
+            String host = Assert.requireNonNull(this.configuration.getHost(), "Host must not be null");
+            return new GSSAuthenticationHandler(this.configuration.getUsername(), this.configuration.getPassword(),
+                host);
         } else {
             throw new IllegalStateException(String.format("Unable to provide AuthenticationHandler capable of handling %s", message));
         }
