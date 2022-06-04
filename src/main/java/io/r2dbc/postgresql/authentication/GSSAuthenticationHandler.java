@@ -23,10 +23,10 @@ import io.r2dbc.postgresql.message.frontend.FrontendMessage;
 import io.r2dbc.postgresql.message.frontend.GSSAuthenticationToken;
 import io.r2dbc.postgresql.util.Assert;
 import org.ietf.jgss.*;
+import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import javax.annotation.Nullable;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.*;
 import javax.security.auth.login.LoginContext;
@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public final class GSSAuthenticationHandler implements AuthenticationHandler {
 
-	private static final String jaasApplicationName = "pdjdbc";
+	private static final String jaasApplicationName = "pgjdbc";
 	private static final String kerberosServerName = "cockroachdb";
 
 	private final String user;
@@ -83,6 +83,7 @@ public final class GSSAuthenticationHandler implements AuthenticationHandler {
 			String.format("Cannot handle %s message", message.getClass().getSimpleName()));
 	}
 
+	@Nullable
 	private FrontendMessage handleAuthenticationGssContinue(
 		AuthenticationGSSContinue authenticationGSSContinue) {
 		Subject subject = this.subject.get();
@@ -90,6 +91,10 @@ public final class GSSAuthenticationHandler implements AuthenticationHandler {
 
 		byte[] outToken = Subject.doAs(subject,
 			new GssContinueAction(authenticationGSSContinue, gssContext));
+
+		if (outToken == null) {
+			return null;
+		}
 
 		return new GSSAuthenticationToken(outToken);
 	}
